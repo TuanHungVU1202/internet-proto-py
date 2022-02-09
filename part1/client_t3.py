@@ -1,11 +1,11 @@
 import json
 import socket
-import time
 
 import h2.connection
 import h2.events
 
 import constant
+import util
 
 socket.setdefaulttimeout(25)
 
@@ -17,10 +17,10 @@ c = h2.connection.H2Connection()
 c.initiate_connection()
 s.sendall(c.data_to_send())
 
-route_uri = '/route?val=' + constant.TASK_2_ROUTE
+uri = '/sendimage'
 headers = [
-    (':method', 'GET'),
-    (':path', route_uri),
+    (':method', 'POST'),
+    (':path', uri),
     (':authority', constant.SERVER_NAME),
     (':scheme', 'https'),
 ]
@@ -49,9 +49,7 @@ while not response_stream_ended:
         if isinstance(event, h2.events.StreamEnded):
             # response body completed, let's exit the loop
             print(f'Stream {event.stream_id} has finished')
-            print("Caching data")
             cache[event.stream_id] = body
-            # print(event.stream_id, body.decode())
             response_stream_ended = True
         if isinstance(event, h2.events.PushedStreamReceived):
             print(f'Got server push from stream {event.pushed_stream_id}')
@@ -59,21 +57,7 @@ while not response_stream_ended:
     # send any pending data to the server
     s.sendall(c.data_to_send())
 
-print("Normal Response - ESPOO map fully received:")
-print(cache[1].decode())
-
-time.sleep(5)
-print("Entering Helsinki area after 5s. Fetching received Pushed HELSINKI map:")
-out = cache[2].decode()
-# RAW received data if needed
-# print(out)
-
-decoder = json.JSONDecoder()
-espoo_map, i = decoder.raw_decode(out)
-helsinki_map, _ = decoder.raw_decode(out[i:])
-push_response_json = json.dumps(helsinki_map)
-helsinki_map_json = json.loads(push_response_json)
-print(helsinki_map_json['push_body'])
+print("Response from server")
 
 
 # tell the server we are closing the h2 connection

@@ -83,9 +83,12 @@ class H2Protocol(asyncio.Protocol):
         path = request_data.headers[':path']
         # Part 1 - Topic 2
         if method == "GET" and re.search("^/route", path):
-            print("entering route")
             self.defined_route_received(stream_id, request_data)
 
+        # Part 1 - Topic 3
+        elif method == "POST" and re.search("^/sendimage", path):
+            print("Receiving image from Client")
+            self.image_received(stream_id, request_data)
 
     def receive_data(self, data: bytes, stream_id: int):
         try:
@@ -173,7 +176,7 @@ class H2Protocol(asyncio.Protocol):
         self.conn.push_stream(stream_id, pushed_stream_id, push_headers)
 
         push_data = json.dumps(
-            {"push_headers": headers, "push_body": helsinki_map}, indent=4
+            {"push_headers": push_headers, "push_body": helsinki_map}, indent=4
         ).encode("utf8")
         res_headers = (
             (':status', '200'),
@@ -184,6 +187,9 @@ class H2Protocol(asyncio.Protocol):
         self.conn.send_headers(pushed_stream_id, res_headers)
         asyncio.ensure_future(self.send_data(push_data, pushed_stream_id))
         print(f'Sent server push to stream {pushed_stream_id}')
+
+    def image_received(self, stream_id, request_data):
+        print("Entering image handle callback")
 
 
 def main():

@@ -1,16 +1,20 @@
+import json
 import socket
 import ssl
+import time
+
 import certifi
 
 import h2.connection
 import h2.events
 
-from constant import Constant
+import constant
+import util
 
 SERVER_NAME = 'localhost'
 SERVER_PORT = 8443
 
-socket.setdefaulttimeout(1000)
+socket.setdefaulttimeout(25)
 # ctx = ssl.create_default_context(cafile=certifi.where())
 # ctx.check_hostname = False
 # ctx.verify_mode = ssl.CERT_NONE
@@ -26,8 +30,8 @@ s.sendall(c.data_to_send())
 
 headers = [
     (':method', 'GET'),
-    (':path', '/reqinfo'),
-    (':authority', Constant.SERVER_NAME),
+    (':path', '/espoo'),
+    (':authority', constant.SERVER_NAME),
     (':scheme', 'https'),
 ]
 c.send_headers(1, headers, end_stream=True)
@@ -57,16 +61,30 @@ while not response_stream_ended:
             print(f'Stream {event.stream_id} has finished')
             print("Caching data")
             cache[event.stream_id] = body
+            # print(event.stream_id, body.decode())
             response_stream_ended = True
         if isinstance(event, h2.events.PushedStreamReceived):
             print(f'Got server push from stream {event.pushed_stream_id}')
+            print("Received PUSH headers: " + str(event.headers))
     # send any pending data to the server
     s.sendall(c.data_to_send())
 
-print("Normal Response fully received:")
+print("Normal Response - ESPOO map fully received:")
 print(cache[1].decode())
-print("PUSH message fully received:")
-print(cache[2].decode())
+
+time.sleep(5)
+print("Entering Helsinki area after 5s. Fetching received Pushed HELSINKI map:")
+out = cache[2].decode()
+# RAW received data if needed
+# print(out)
+
+decoder = json.JSONDecoder()
+espoo_map, i = decoder.raw_decode(out)
+helsinki_map, _ = decoder.raw_decode(out[i:])
+push_response_json = json.dumps(helsinki_map)
+helsinki_map_json = json.loads(push_response_json)
+print(helsinki_map_json['push_body'])
+
 
 # tell the server we are closing the h2 connection
 c.close_connection()

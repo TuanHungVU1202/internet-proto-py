@@ -15,7 +15,8 @@ from h2.errors import ErrorCodes
 from h2.exceptions import ProtocolError, StreamClosedError
 from h2.settings import SettingCodes
 
-from constant import Constant
+import constant
+import util
 
 RequestData = collections.namedtuple('RequestData', ['headers', 'data'])
 
@@ -50,6 +51,7 @@ class H2Protocol(asyncio.Protocol):
                 print(f'Got event {type(event)}')
                 if isinstance(event, RequestReceived):
                     self.request_received(event.headers, event.stream_id)
+                    print(event.headers)
                 elif isinstance(event, DataReceived):
                     self.receive_data(event.data, event.stream_id)
                 elif isinstance(event, StreamEnded):
@@ -76,38 +78,46 @@ class H2Protocol(asyncio.Protocol):
             request_data = self.stream_data[stream_id]
         except KeyError:
             return
+
+        espoo_map = util.parse_json_file(constant.ESPOO_MAP_PATH)
         headers = request_data.headers
-        body = request_data.data.getvalue().decode('utf-8')
+        # body = request_data.data.getvalue().decode('utf-8')
         data = json.dumps(
-            {"headers": headers, "body": body}, indent=4
+            {"headers": headers, "body": espoo_map}, indent=4
         ).encode("utf8")
 
         response_headers = (
             (':status', '200'),
             ('content-type', 'application/json'),
             ('content-length', str(len(data))),
-            ('server', Constant.SERVER_NAME),
+            ('server', constant.SERVER_NAME),
         )
         self.conn.send_headers(stream_id, response_headers)
         asyncio.ensure_future(self.send_data(data, stream_id))
         print(f'Sent response to stream {stream_id}')
 
         # Server push
-        headers = [
+        helsinki_map = util.parse_json_file(constant.HELSINKI_MAP_PATH)
+        push_headers = [
             (':method', 'GET'),
-            (':path', '/reqinfo2'),
+            (':path', '/helsinki'),
             (':scheme', 'https'),
-            (':authority', Constant.SERVER_NAME),
+            (':authority', constant.SERVER_NAME),
         ]
         pushed_stream_id = self.conn.get_next_available_stream_id()
-        self.conn.push_stream(stream_id, pushed_stream_id, headers)
-        headers = (
+        self.conn.push_stream(stream_id, pushed_stream_id, push_headers)
+
+        push_data = json.dumps(
+            {"push_headers": headers, "push_body": helsinki_map}, indent=4
+        ).encode("utf8")
+        res_headers = (
             (':status', '200'),
             ('content-type', 'application/json'),
-            ('server', Constant.SERVER_NAME),
+            ('server', constant.SERVER_NAME),
         )
-        self.conn.send_headers(pushed_stream_id, headers)
-        asyncio.ensure_future(self.send_data("This is a pushed message".encode(), 2))
+
+        self.conn.send_headers(pushed_stream_id, res_headers)
+        asyncio.ensure_future(self.send_data(push_data, pushed_stream_id))
         print(f'Sent server push to stream {pushed_stream_id}')
 
     def receive_data(self, data: bytes, stream_id: int):

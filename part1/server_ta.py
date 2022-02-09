@@ -1,6 +1,7 @@
 import asyncio
 import io
 import json
+import re
 import ssl
 import collections
 from typing import List, Tuple
@@ -78,47 +79,13 @@ class H2Protocol(asyncio.Protocol):
             request_data = self.stream_data[stream_id]
         except KeyError:
             return
+        method = request_data.headers[':method']
+        path = request_data.headers[':path']
+        # Part 1 - Topic 2
+        if method == "GET" and re.search("^/route", path):
+            print("entering route")
+            self.defined_route_received(stream_id, request_data)
 
-        espoo_map = util.parse_json_file(constant.ESPOO_MAP_PATH)
-        headers = request_data.headers
-        # body = request_data.data.getvalue().decode('utf-8')
-        data = json.dumps(
-            {"headers": headers, "body": espoo_map}, indent=4
-        ).encode("utf8")
-
-        response_headers = (
-            (':status', '200'),
-            ('content-type', 'application/json'),
-            ('content-length', str(len(data))),
-            ('server', constant.SERVER_NAME),
-        )
-        self.conn.send_headers(stream_id, response_headers)
-        asyncio.ensure_future(self.send_data(data, stream_id))
-        print(f'Sent response to stream {stream_id}')
-
-        # Server push
-        helsinki_map = util.parse_json_file(constant.HELSINKI_MAP_PATH)
-        push_headers = [
-            (':method', 'GET'),
-            (':path', '/helsinki'),
-            (':scheme', 'https'),
-            (':authority', constant.SERVER_NAME),
-        ]
-        pushed_stream_id = self.conn.get_next_available_stream_id()
-        self.conn.push_stream(stream_id, pushed_stream_id, push_headers)
-
-        push_data = json.dumps(
-            {"push_headers": headers, "push_body": helsinki_map}, indent=4
-        ).encode("utf8")
-        res_headers = (
-            (':status', '200'),
-            ('content-type', 'application/json'),
-            ('server', constant.SERVER_NAME),
-        )
-
-        self.conn.send_headers(pushed_stream_id, res_headers)
-        asyncio.ensure_future(self.send_data(push_data, pushed_stream_id))
-        print(f'Sent server push to stream {pushed_stream_id}')
 
     def receive_data(self, data: bytes, stream_id: int):
         try:
@@ -175,6 +142,48 @@ class H2Protocol(asyncio.Protocol):
                 f.set_result(delta)
 
             self.flow_control_futures = {}
+
+    def defined_route_received(self, stream_id, request_data):
+        espoo_map = util.parse_json_file(constant.ESPOO_MAP_PATH)
+        headers = request_data.headers
+        # body = request_data.data.getvalue().decode('utf-8')
+        data = json.dumps(
+            {"headers": headers, "body": espoo_map}, indent=4
+        ).encode("utf8")
+
+        response_headers = (
+            (':status', '200'),
+            ('content-type', 'application/json'),
+            ('content-length', str(len(data))),
+            ('server', constant.SERVER_NAME),
+        )
+        self.conn.send_headers(stream_id, response_headers)
+        asyncio.ensure_future(self.send_data(data, stream_id))
+        print(f'Sent response to stream {stream_id}')
+
+        # Server push
+        helsinki_map = util.parse_json_file(constant.HELSINKI_MAP_PATH)
+        push_headers = [
+            (':method', 'GET'),
+            (':path', '/helsinki'),
+            (':scheme', 'https'),
+            (':authority', constant.SERVER_NAME),
+        ]
+        pushed_stream_id = self.conn.get_next_available_stream_id()
+        self.conn.push_stream(stream_id, pushed_stream_id, push_headers)
+
+        push_data = json.dumps(
+            {"push_headers": headers, "push_body": helsinki_map}, indent=4
+        ).encode("utf8")
+        res_headers = (
+            (':status', '200'),
+            ('content-type', 'application/json'),
+            ('server', constant.SERVER_NAME),
+        )
+
+        self.conn.send_headers(pushed_stream_id, res_headers)
+        asyncio.ensure_future(self.send_data(push_data, pushed_stream_id))
+        print(f'Sent server push to stream {pushed_stream_id}')
 
 
 def main():

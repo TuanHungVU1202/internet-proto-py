@@ -28,9 +28,10 @@ c = h2.connection.H2Connection()
 c.initiate_connection()
 s.sendall(c.data_to_send())
 
+route_uri = '/route?val=' + constant.TASK_2_ROUTE
 headers = [
     (':method', 'GET'),
-    (':path', '/espoo'),
+    (':path', route_uri),
     (':authority', constant.SERVER_NAME),
     (':scheme', 'https'),
 ]

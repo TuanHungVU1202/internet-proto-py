@@ -151,7 +151,7 @@ class H2Protocol(asyncio.Protocol):
             self.flow_control_futures = {}
 
     def defined_route_received(self, stream_id, request_data):
-        espoo_map = util.parse_json_file(constant.ESPOO_MAP_PATH)
+        espoo_map = util.parse_json_file_to_str(constant.ESPOO_MAP_PATH)
         headers = request_data.headers
         # body = request_data.data.getvalue().decode('utf-8')
         data = json.dumps(
@@ -169,7 +169,7 @@ class H2Protocol(asyncio.Protocol):
         print(f'Sent response to stream {stream_id}')
 
         # Server push
-        helsinki_map = util.parse_json_file(constant.HELSINKI_MAP_PATH)
+        helsinki_map = util.parse_json_file_to_str(constant.HELSINKI_MAP_PATH)
         push_headers = [
             (':method', 'GET'),
             (':path', '/helsinki'),
@@ -198,7 +198,7 @@ class H2Protocol(asyncio.Protocol):
         received_data = cache[stream_id].decode()
 
         # extract information from request JSON
-        image_id, img, lat, long = util.extract_json(received_data)
+        image_id, img, lat, long = util.extract_post_img_json(received_data)
         # convert from b64 back to img data
         image = util.b64_to_img(img)
 

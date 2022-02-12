@@ -60,11 +60,12 @@ def send_request(c, s):
 
     # Convert image to b64 here
     # Send along with the coordinates
-    imageb64 = util.get_serialized_img(constant.IMAGE_1)
-    # TODO: adjust lat and long here with a function or at least a few corresponding examples
-    image_id = 12
-    lat = 'lat12'
-    long = 'long23'
+    image_id = 15
+    imageb64 = util.get_serialized_img(image_id)
+
+    # Extract coordinates from image index
+    route, lat, long = util.extract_route_json(constant.METADATA_FILE_PATH, image_id)
+
     data = json.dumps(
         {"headers": headers, "image_id": image_id, "image": imageb64, "lat": lat, "long": long}, indent=4
     ).encode("utf8")

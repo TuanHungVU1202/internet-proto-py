@@ -20,6 +20,9 @@ import constant
 import util
 
 RequestData = collections.namedtuple('RequestData', ['headers', 'data'])
+cache = {}
+saved_image = {}
+body = b''
 
 
 class H2Protocol(asyncio.Protocol):
@@ -29,6 +32,7 @@ class H2Protocol(asyncio.Protocol):
         self.transport = None
         self.stream_data = {}
         self.flow_control_futures = {}
+        self.body = b''
 
     def connection_made(self, transport: asyncio.Transport):
         self.transport = transport
@@ -52,8 +56,10 @@ class H2Protocol(asyncio.Protocol):
                 print(f'Got event {type(event)}')
                 if isinstance(event, RequestReceived):
                     self.request_received(event.headers, event.stream_id)
-                    print(event.headers)
                 elif isinstance(event, DataReceived):
+                    self.conn.acknowledge_received_data(event.flow_controlled_length, event.stream_id)
+                    self.body += event.data
+                    print(event.stream_id, self.body.decode())
                     self.receive_data(event.data, event.stream_id)
                 elif isinstance(event, StreamEnded):
                     self.stream_complete(event.stream_id)
@@ -85,9 +91,8 @@ class H2Protocol(asyncio.Protocol):
         if method == "GET" and re.search("^/route", path):
             self.defined_route_received(stream_id, request_data)
 
-        # Part 1 - Topic 3
+        # Part 1 - Topic 3 - POST
         elif method == "POST" and re.search("^/sendimage", path):
-            print("Receiving image from Client")
             self.image_received(stream_id, request_data)
 
     def receive_data(self, data: bytes, stream_id: int):
@@ -189,7 +194,28 @@ class H2Protocol(asyncio.Protocol):
         print(f'Sent server push to stream {pushed_stream_id}')
 
     def image_received(self, stream_id, request_data):
-        print("Entering image handle callback")
+        request_headers = request_data.headers
+        method = request_headers[':method']
+        received_data = cache[stream_id].decode()
+        print(received_data)
+        received_image = json.loads(received_data)['image']
+        lat = json.loads(received_data)['lat']
+        long = json.loads(received_data)['long']
+        if method == 'POST':
+            print("Received Image from Client " + method)
+
+            response_data = json.dumps(
+                {"headers": request_headers, "body": "Image Received"}, indent=4
+            ).encode("utf8")
+
+            response_headers = (
+                (':status', '200'),
+                ('content-type', 'application/json'),
+                ('content-length', str(len(response_data))),
+                ('server', constant.SERVER_NAME),
+            )
+            self.conn.send_headers(stream_id, response_headers)
+            asyncio.ensure_future(self.send_data(response_data, stream_id))
 
 
 def main():

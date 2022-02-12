@@ -50,21 +50,22 @@ def handle_response(c, s):
 def send_request(c, s):
     # Sending REQUESTS
     #############################################
-    uri = '/sendimage'
-    headers = [
-        (':method', 'POST'),
-        (':path', uri),
-        (':authority', constant.SERVER_NAME),
-        (':scheme', 'https'),
-    ]
-
+    # 14, 22, 100
+    image_id = 22
     # Convert image to b64 here
     # Send along with the coordinates
-    image_id = 15
     imageb64 = util.get_serialized_img(image_id)
 
     # Extract coordinates from image index
     route, lat, long = util.extract_route_json(constant.METADATA_FILE_PATH, image_id)
+
+    uri = '/put/' + str(lat) + '%2C' + str(long)
+    headers = [
+        (':method', 'PUT'),
+        (':path', uri),
+        (':authority', constant.SERVER_NAME),
+        (':scheme', 'https'),
+    ]
 
     data = json.dumps(
         {"headers": headers, "image_id": image_id, "image": imageb64, "lat": lat, "long": long}, indent=4

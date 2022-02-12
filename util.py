@@ -2,6 +2,7 @@ import ast
 import base64
 import json
 from io import BytesIO
+from os import walk
 
 from PIL import Image
 
@@ -63,3 +64,15 @@ def extract_route_json(file_path, img_index):
     lat = route[img_index][0]
     long = route[img_index][1]
     return route, lat, long
+
+
+def extract_coord_from_uri(uri):
+    raw_coord = uri.replace('/put/', '').split("%2C")
+    lat = raw_coord[0].strip()
+    long = raw_coord[1].strip()
+    return lat, long
+
+
+def get_file_list(path):
+    filenames = next(walk(path), (None, None, []))[2]  # [] if no file
+    return filenames

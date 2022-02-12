@@ -94,6 +94,10 @@ class H2Protocol(asyncio.Protocol):
         elif method == "POST" and re.search("^/sendimage", path):
             self.image_received(stream_id, request_data)
 
+        # Part 1 - Topic 3 - PUT
+        elif method == "PUT":
+            self.image_received(stream_id, request_data)
+
     def receive_data(self, data: bytes, stream_id: int):
         try:
             stream_data = self.stream_data[stream_id]
@@ -195,6 +199,7 @@ class H2Protocol(asyncio.Protocol):
     def image_received(self, stream_id, request_data):
         request_headers = request_data.headers
         method = request_headers[':method']
+        path = request_headers[':path']
         received_data = cache[stream_id].decode()
 
         # extract information from request JSON
@@ -206,7 +211,7 @@ class H2Protocol(asyncio.Protocol):
             print("Received Image from Client via method: " + method)
             # save received to disk/or any other DB
             # for POST not using image id but Save that for PUT
-            img_saved_path = util.save_img_to_disk('resources/output/' + str(lat) + '_' + str(long) + '.png', image)
+            img_saved_path = util.save_img_to_disk(constant.BASE_PATH_OUT + str(lat) + '_' + str(long) + '.png', image)
 
             response_data = json.dumps(
                 {"headers": request_headers,
@@ -224,6 +229,62 @@ class H2Protocol(asyncio.Protocol):
             )
             self.conn.send_headers(stream_id, response_headers)
             asyncio.ensure_future(self.send_data(response_data, stream_id))
+
+        elif method == 'PUT':
+            print("Received Image from Client via method: " + method)
+            print("Requested URI: " + path)
+            print("Received lat and long: " + str(lat) + " - " + str(long))
+
+            lat_uri, long_uri = util.extract_coord_from_uri(path)
+            file_list = util.get_file_list(constant.PATH_OUT_PUT)
+
+            # file list is empty
+            if not file_list:
+                print("Creating new resource")
+                img_saved_path = util.save_img_to_disk(
+                    constant.PATH_OUT_PUT + str(lat_uri) + '_' + str(long_uri) + '.png', image)
+                self.send_response_put(stream_id, request_data, image_id, img_saved_path, 201, "Resource Created")
+            else:
+                for file in file_list:
+                    if '.png' in file:
+                        file_name = file.replace('.png', '')
+                        coord_pair = file_name.split('_')
+                        # if coord_pair[0].strip() != lat_uri and coord_pair[1].strip() != long_uri:
+
+                        if coord_pair[0].strip() == lat_uri and coord_pair[1].strip() == long_uri:
+                            print("Resource existed")
+                            img_saved_path = constant.PATH_OUT_PUT + str(lat_uri) + '_' + str(long_uri) + '.png'
+                            self.send_response_put(stream_id, request_data, image_id, img_saved_path, 200,
+                                                   "Resource Existed")
+                            break
+                        else:
+                            print("Creating new resource")
+                            img_saved_path = util.save_img_to_disk(
+                                constant.PATH_OUT_PUT + str(lat_uri) + '_' + str(long_uri) + '.png', image)
+                            self.send_response_put(stream_id, request_data, image_id, img_saved_path, 201,
+                                                   "Resource Created")
+                            break
+
+    def send_response_put(self, stream_id, request_data, image_id, img_saved_path, status_code, response_message):
+        print("Sending response with status code: " + str(status_code))
+        request_headers = request_data.headers
+        response_data = json.dumps(
+            {"headers": request_headers,
+             "image_id": image_id,
+             "img_saved_path": img_saved_path,
+             "message": response_message},
+            indent=4
+        ).encode("utf8")
+
+        response_headers = (
+            (':status', str(status_code)),
+            ('content-type', 'application/json'),
+            ('content-length', str(len(response_data))),
+            ('server', constant.SERVER_NAME),
+        )
+        self.conn.send_headers(stream_id, response_headers)
+        asyncio.ensure_future(self.send_data(response_data, stream_id))
+        cache.clear()
 
 
 def main():

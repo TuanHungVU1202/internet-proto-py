@@ -22,7 +22,6 @@ import util
 RequestData = collections.namedtuple('RequestData', ['headers', 'data'])
 cache = {}
 saved_image = {}
-body = b''
 
 
 class H2Protocol(asyncio.Protocol):
@@ -59,9 +58,9 @@ class H2Protocol(asyncio.Protocol):
                 elif isinstance(event, DataReceived):
                     self.conn.acknowledge_received_data(event.flow_controlled_length, event.stream_id)
                     self.body += event.data
-                    print(event.stream_id, self.body.decode())
                     self.receive_data(event.data, event.stream_id)
                 elif isinstance(event, StreamEnded):
+                    cache[event.stream_id] = self.body
                     self.stream_complete(event.stream_id)
                 elif isinstance(event, ConnectionTerminated):
                     self.transport.close()
@@ -197,15 +196,24 @@ class H2Protocol(asyncio.Protocol):
         request_headers = request_data.headers
         method = request_headers[':method']
         received_data = cache[stream_id].decode()
-        print(received_data)
-        received_image = json.loads(received_data)['image']
-        lat = json.loads(received_data)['lat']
-        long = json.loads(received_data)['long']
+
+        # extract information from request JSON
+        image_id, img, lat, long = util.extract_json(received_data)
+        # convert from b64 back to img data
+        image = util.b64_to_img(img)
+
         if method == 'POST':
-            print("Received Image from Client " + method)
+            print("Received Image from Client via method: " + method)
+            # save received to disk/or any other DB
+            # for POST not using image id but Save that for PUT
+            img_saved_path = util.save_img_to_disk('resources/output/' + str(lat) + '_' + str(long) + '.png', image)
 
             response_data = json.dumps(
-                {"headers": request_headers, "body": "Image Received"}, indent=4
+                {"headers": request_headers,
+                 "image_id": image_id,
+                 "img_saved_path": img_saved_path,
+                 "message": "Image Received"},
+                indent=4
             ).encode("utf8")
 
             response_headers = (

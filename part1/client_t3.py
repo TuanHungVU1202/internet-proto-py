@@ -61,29 +61,34 @@ def send_request(c, s):
     # Convert image to b64 here
     # Send along with the coordinates
     imageb64 = util.get_serialized_img(constant.IMAGE_1)
-    # print(c.DEFAULT_MAX_OUTBOUND_FRAME_SIZE)
+    # TODO: adjust lat and long here with a function or at least a few corresponding examples
+    image_id = 12
     lat = 'lat12'
     long = 'long23'
     data = json.dumps(
-        {"headers": headers, "image": imageb64, "lat": lat, "long": long}, indent=4
+        {"headers": headers, "image_id": image_id, "image": imageb64, "lat": lat, "long": long}, indent=4
     ).encode("utf8")
 
     stream_id = 1
     end_stream = False
     c.send_headers(stream_id, headers, end_stream=end_stream)
-    send_data2(s, c, data, stream_id)
+
+    # Send data
+    send_data(s, c, data, stream_id)
 
 
-def send_data2(s: socket.socket, c: h2.connection.H2Connection, data, stream_id: int):
+def send_data(s: socket.socket, c: h2.connection.H2Connection, data, stream_id: int):
     if not data:
         c.end_stream(stream_id)
 
+    # Keep sending as long as the body is > 0
     while len(data) > 0:
         window_size = c.local_flow_control_window(stream_id)
         max_frame_size = c.max_outbound_frame_size
 
+        # Waiting for acknowledgement from server
+        # If partially data has been acknowledged as processed then more window_flow is released
         while window_size < 1:
-            print("win size: " + str(window_size))
             received_data = s.recv(65536)
             if not received_data:
                 break
@@ -94,64 +99,24 @@ def send_data2(s: socket.socket, c: h2.connection.H2Connection, data, stream_id:
             s.sendall(c.data_to_send())
         chunk_size = min(window_size, len(data), max_frame_size)
         end_stream = chunk_size >= len(data)
-        print(chunk_size)
-        print(len(data))
         c.send_data(stream_id, data[:chunk_size], end_stream)
         data = data[chunk_size:]
 
 
-# def send_data(c, s, data, stream_id):
-#     flow_control_futures = {}
-#     while data:
-#         while c.local_flow_control_window(stream_id) < 1:
-#             try:
-#                 wait_for_flow_control(stream_id, flow_control_futures)
-#             except asyncio.CancelledError:
-#                 return
-#
-#         chunk_size = min(
-#             c.local_flow_control_window(stream_id),
-#             len(data),
-#             c.max_outbound_frame_size,
-#         )
-#
-#         try:
-#             c.send_data(
-#                 stream_id,
-#                 data[:chunk_size],
-#                 end_stream=(chunk_size == len(data))
-#             )
-#         except (StreamClosedError, ProtocolError):
-#             break
-#
-#         s.sendall(c.data_to_send())
-#         data = data[chunk_size:]
-#
-#     print("END")
-#
-#
-# async def wait_for_flow_control(stream_id, flow_control_futures):
-#     f = asyncio.Future()
-#     flow_control_futures[stream_id] = f
-#     await f
-
-
 def main():
     socket.setdefaulttimeout(25)
-
     # open a socket to the server and initiate TLS/SSL
     s = socket.create_connection((constant.SERVER_NAME, constant.PORT))
     # s = ctx.wrap_socket(s, server_hostname=SERVER_NAME)
-
     c = h2.connection.H2Connection()
     c.initiate_connection()
     s.sendall(c.data_to_send())
     #############################################
-
     # Send request
     send_request(c, s)
     # handle response
-    # handle_response(c, s)
+    handle_response(c, s)
+    #############################################
     # tell the server we are closing the h2 connection
     c.close_connection()
     s.sendall(c.data_to_send())

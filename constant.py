@@ -13,4 +13,15 @@ TASK_2_ROUTE = '[[60.18314587645695, 24.831518950092683], [60.183115400000005, 2
 METADATA_FILE_PATH = '../resources/trace/metadata.json'
 
 BASE_PATH_OUT = 'resources/output/'
-PATH_OUT_PUT =  'resources/output/put/'
+PATH_OUT_PUT = 'resources/output/put/'
+########################################
+# MQTT_BROKER = 'mqtt.eclipseprojects.io'
+# MQTT_BROKER = 'broker.emqx.io'
+# MQTT_BROKER = 'test.mosquitto.org'
+
+MQTT_BROKER = 'localhost'
+
+MQTT_PORT = 1883
+MQTT_KEEP_ALIVE_INTERVAL = 50
+
+MQTT_TOPIC_BASE = "InternetProtocol/Road/Segment/"

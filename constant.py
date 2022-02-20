@@ -25,3 +25,4 @@ MQTT_PORT = 1883
 MQTT_KEEP_ALIVE_INTERVAL = 50
 
 MQTT_TOPIC_BASE = "InternetProtocol/Road/Segment/"
+MQTT_TOPIC_2 = "InternetProtocol/Road/Discard/"

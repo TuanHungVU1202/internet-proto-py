@@ -1,30 +1,34 @@
+import time
+
 import paho.mqtt.client as mqtt
 
 import constant
+
+client_list = []
+client_info = {}
 
 
 def on_connect(client, userdata, flags, rc):
     if rc != 0:
         print("Unable to connect to MQTT Broker...")
     else:
-        print("Connected with MQTT Broker")
-        client.subscribe(constant.MQTT_TOPIC_BASE)
+        topic = client_info['topic']
+        client.subscribe(topic)
+        print("Subscribed topic: " + topic)
 
 
 # Save Data into DB Table
 def on_message(client, userdata, message):
     # For details of "sensor_Data_Handler" function please refer "sensor_data_to_db.py"
-    print("MQTT Data Received...")
-    print("MQTT Topic: " + message.topic)
-    print("Data: " + message.payload.decode("utf-8"))
+    topic = message.topic
+    msg = message.payload.decode("utf-8")
+    print("Subscriber - " + str(client) + " - msg: " + msg)
     # sensor_Data_Handler(message.topic, message.payload)
 
 
 def create_client(client_number):
-    client_list = []
-    # connecting to the broker
     for client_id in range(client_number):
-        client = mqtt.Client("Sub - " + str(client_id))
+        client = mqtt.Client()
         client.connect(constant.MQTT_BROKER)
         client.on_connect = on_connect
         client.on_message = on_message
@@ -35,15 +39,17 @@ def create_client(client_number):
     return client_list
 
 
-def run():
+def run(number_of_client, topic, unsubscribe):
     try:
-        client_list = create_client(1)
+        client_info['topic'] = topic
+        create_client(number_of_client)
+        if unsubscribe:
+            time.sleep(10)
+            client_list[0].unsubscribe(topic)
+            print("Client instance - " + str(client_list[0]) + " unsubscribed topic: " + topic)
+            client_list[0].disconnect()
+            client_list[0].loop_stop()
         while True:
-            for client_id, client in enumerate(client_list):
-                pass
+            pass
     except KeyboardInterrupt:
         print("Interrupted by Keyboard")
-
-
-if __name__ == "__main__":
-    run()

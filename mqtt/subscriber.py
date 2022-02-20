@@ -41,6 +41,8 @@ def create_client(client_number):
 
 def run(number_of_client, topic, unsubscribe):
     try:
+        if topic == constant.MQTT_TOPIC_3:
+            topic = constant.MQTT_TOPIC_3 + "#"
         client_info['topic'] = topic
         create_client(number_of_client)
         if unsubscribe:

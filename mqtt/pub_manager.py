@@ -12,7 +12,11 @@ def run(config_number):
     elif config_number == 2:
         publishers = threading.Thread(target=publisher.run(number_of_client=2, topic=constant.MQTT_TOPIC_2))
         publishers.start()
+    # Case 3: start only this to publish to multiple topics
+    elif config_number == 3:
+        publishers = threading.Thread(target=publisher.run(number_of_client=3, topic=constant.MQTT_TOPIC_3))
+        publishers.start()
 
 
 if __name__ == "__main__":
-    run(1)
+    run(3)

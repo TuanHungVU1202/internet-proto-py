@@ -84,13 +84,17 @@ def get_file_list(path):
 def get_full_path_file_list(dir_name):
     list_file_path = list()
     list_file_name = list()
+    list_file_name_non_extension = list()
     for (dir_path, dir_names, file_names) in os.walk(dir_name):
         # Exclude .DStore
         if file_names and not file_names[0].startswith('.'):
             list_file_path += [os.path.join(dir_path, file) for file in file_names]
             list_file_name += file_names
 
-    return list_file_path, list_file_name
+    for file_name in file_names:
+        list_file_name_non_extension.append(file_name.split('.')[0])
+
+    return list_file_path, list_file_name, list_file_name_non_extension
 
 
 def get_current_timestamp():

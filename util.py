@@ -1,6 +1,8 @@
 import ast
 import base64
 import json
+import os
+import time
 from io import BytesIO
 from os import walk
 
@@ -73,6 +75,23 @@ def extract_coord_from_uri(uri):
     return lat, long
 
 
+# Deprecated, use next one
 def get_file_list(path):
     filenames = next(walk(path), (None, None, []))[2]  # [] if no file
     return filenames
+
+
+def get_full_path_file_list(dir_name):
+    list_file_path = list()
+    list_file_name = list()
+    for (dir_path, dir_names, file_names) in os.walk(dir_name):
+        # Exclude .DStore
+        if file_names and not file_names[0].startswith('.'):
+            list_file_path += [os.path.join(dir_path, file) for file in file_names]
+            list_file_name += file_names
+
+    return list_file_path, list_file_name
+
+
+def get_current_timestamp():
+    return time.time()

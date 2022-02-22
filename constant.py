@@ -28,4 +28,4 @@ MQTT_TOPIC_BASE = "InternetProtocol/Road/Segment/"
 MQTT_TOPIC_2 = "InternetProtocol/Road/Discard/"
 MQTT_TOPIC_3 = "InternetProtocol/Road/C3/"
 
-MQTT_DATA_PATH_BASE = "resources/samples_p2/"
+MQTT_DATA_PATH_BASE = "../resources/samples_p2/"

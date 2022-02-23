@@ -15,7 +15,7 @@ def create_client(client_number):
     # connecting to the broker
     for client_id in range(client_number):
         client = mqtt.Client()
-        client.connect(constant.MQTT_BROKER)
+        client.connect(constant.MQTT_BROKER, constant.MQTT_PORT)
         client.loop_start()
         client_list.append(client)
 
@@ -25,12 +25,12 @@ def create_client(client_number):
 # topic = road_name
 def publish_message(pub_id, client, road_name, delay_list, index, file):
     topic = constant.MQTT_TOPIC_SCALE_BASE + road_name
-    time.sleep(delay_list[index]/1000)
+    time.sleep(delay_list[index] / 1000)
     timestamp = time.time()
 
     data = create_data_to_publish(file, road_name)
     payload = json.dumps(
-        {"message_id": 'ss', "time_sent": timestamp, "data": data}, indent=4
+        {"time_sent": timestamp, "pub_id": pub_id, "topic": topic, "broker": constant.MQTT_BROKER, "port": constant.MQTT_PORT, "data": data}, indent=4
     ).encode("utf8")
 
     print("Pub_id: " + str(pub_id) + " publishing to: " + topic)
@@ -63,4 +63,3 @@ def run(number_of_client):
 if __name__ == "__main__":
     # 1, 7, 56, 112
     run(1)
-

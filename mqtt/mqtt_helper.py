@@ -58,3 +58,8 @@ def create_data_to_publish(file_path, road_name):
             data.append(road)
 
     return data
+
+
+def get_client_object_id(client):
+    client_str = str(client).replace('<', '').replace('>', '').split(' ')
+    return client_str[3]

@@ -44,7 +44,7 @@ def create_table():
     print("Created mqtt table")
 
 
-def persist_data(json_data, sub_id):
+def persist_data(json_data, sub_id, time_received):
     # Parse Data
     json_obj = json.loads(json_data)
     time_sent = json_obj['time_sent']
@@ -54,14 +54,12 @@ def persist_data(json_data, sub_id):
     port = json_obj['port']
     data = str(json_obj['data'])
 
-    time_received = util.get_current_timestamp()
-
     # Push into DB Table
     db = DatabaseManager()
     db.add_del_update_db_record(
         "insert into mqtt (time_sent, time_received, pub_id, sub_id, topic, broker, port, data) values (?,?,?,?,?,?,?,?)",
         [time_sent, time_received, pub_id, sub_id, topic, broker, port, data])
     del db
-    print("Saved to Database.")
+    print("Sub_id: " + sub_id + " - Saved to Database.")
 
 # ===============================================================

@@ -6,8 +6,9 @@ import paho.mqtt.client as mqtt
 
 import constant
 import util
-from mqtt import db_handler
+from mqtt import db_handler, mqtt_helper
 from mqtt.mqtt_helper import get_client_object_id
+from mqtt.scale_test.scale_publisher import TOTAL_MESSAGE_SENT
 
 client_list = []
 client_info = {}
@@ -30,7 +31,6 @@ def on_message(client, userdata, message):
     time_received = util.get_current_timestamp()
     topic = message.topic
     msg = message.payload.decode("utf-8")
-    # TODO: write delay to file
     msg_json = json.loads(msg)
     time_sent = msg_json['time_sent']
     msg_id = msg_json['file_index']
@@ -47,8 +47,6 @@ def on_message(client, userdata, message):
 
     # print("Sub_id - " + client_obj_id + " - msg: " + msg)
     print("Sub_id: " + client_obj_id + " received message from topic: " + topic)
-
-    # TODO: implement queue here maybe, then pop out and save that to db
     try:
         db_handler.persist_data(msg, client_obj_id, time_received)
     except OperationalError:
@@ -74,11 +72,11 @@ def disconnect():
         client.unsubscribe(topic)
         client.disconnect()
         client.loop_stop()
-        client_obj_id = get_client_object_id(client)
-        print("Sub_id: " + client_obj_id + " disconnect")
+        # client_obj_id = get_client_object_id(client)
+        # print("Sub_id: " + client_obj_id + " disconnect")
 
 
-def run(number_of_client, topic, unsubscribe, sub_multi_topic):
+def run(number_of_client, number_of_broker, topic, unsubscribe, sub_multi_topic):
     try:
         if sub_multi_topic:
             topic = MQTT_TOPIC_BASE + "#"
@@ -98,8 +96,21 @@ def run(number_of_client, topic, unsubscribe, sub_multi_topic):
             pass
     except KeyboardInterrupt:
         print("Interrupted by Keyboard")
-        print(client_delay)
-        print(client_message_received)
+        # print(client_delay)
+        # file_path, file_name, pub_number, sub_number, broker_number, data
+        mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
+                                         constant.MQTT_OUTPUT_DELAY,
+                                         112,
+                                         number_of_client,
+                                         number_of_broker,
+                                         str(client_delay))
+        # print(client_message_received)
+        mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
+                                         constant.MQTT_OUTPUT_MSG_RECEIVED,
+                                         112,
+                                         number_of_client,
+                                         number_of_broker,
+                                         str(client_message_received))
         disconnect()
 
 
@@ -109,6 +120,7 @@ if __name__ == "__main__":
     db_handler.create_table()
     # sub_multi_topic = subscribe to 112 topics instead of specific one from variable topic
     run(number_of_client=1,
+        number_of_broker=1,
         topic=topic,
         unsubscribe=False,
         sub_multi_topic=True)

@@ -31,3 +31,7 @@ MQTT_TOPIC_3 = "InternetProtocol/Road/C3/"
 MQTT_TOPIC_SCALE_BASE = "InternetProtocol/Scale/Road/"
 
 MQTT_DATA_PATH_BASE = "../resources/samples_p2/"
+MQTT_OUTPUT_PATH = '../../resources/output/mqtt/'
+MQTT_OUTPUT_MSG_SENT = 'message_sent'
+MQTT_OUTPUT_MSG_RECEIVED = 'message_received'
+MQTT_OUTPUT_DELAY = 'delay'

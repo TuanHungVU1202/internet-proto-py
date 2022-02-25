@@ -63,3 +63,15 @@ def create_data_to_publish(file_path, road_name):
 def get_client_object_id(client):
     client_str = str(client).replace('<', '').replace('>', '').split(' ')
     return client_str[3]
+
+
+def write_result_to_file(file_path, file_name, pub_number, sub_number, broker_number, data):
+    # file_name are: delay, message_sent, message_received
+    file_path_full = file_path \
+                     + file_name + '_' \
+                     + str(pub_number) + '_' \
+                     + str(sub_number) + '_' \
+                     + str(broker_number)
+    print(file_path_full)
+    with open(file_path_full, 'w') as file:
+        file.write(data)

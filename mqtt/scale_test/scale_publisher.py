@@ -4,6 +4,7 @@ import time
 import paho.mqtt.client as mqtt
 
 import constant
+from mqtt import mqtt_helper
 from mqtt.mqtt_helper import get_unique_road_list, get_topic_for_client, get_delay_list, create_data_to_publish
 from util import get_file_list, get_full_path_file_list
 
@@ -50,7 +51,7 @@ def publish_message(pub_id, client, road_name, delay_list, file_index, file):
         message_sent_per_topic[topic] = 1
 
 
-def run(number_of_client):
+def run(number_of_client, number_of_broker):
     try:
         # run once
         list_file_path, list_file_name, list_file_name_non_extension = get_full_path_file_list(MQTT_DATA_PATH_BASE)
@@ -63,7 +64,8 @@ def run(number_of_client):
         client_topic_dict = get_topic_for_client(unique_road_list, number_of_client)
         client_list = create_client(number_of_client)
         # while True:
-        # road_name = topic
+        # road_name is topic
+        # Run for 2 minutes then stop
         timeout = time.time() + 60 * 2
         for file_index, file in enumerate(list_file_path):
             if time.time() > timeout:
@@ -72,12 +74,19 @@ def run(number_of_client):
                 for road_name in road_name_list:
                     publish_message(pub_id, client_list[pub_id], road_name, delay_list, file_index, file)
 
-        print(message_sent_per_topic)
-        print(TOTAL_MESSAGE_SENT)
+        # print(message_sent_per_topic)
+        # print(TOTAL_MESSAGE_SENT)
+        # file_path, file_name, pub_number, sub_number, broker_number, data
+        mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
+                                         constant.MQTT_OUTPUT_MSG_SENT,
+                                         number_of_client,
+                                         0,
+                                         number_of_broker,
+                                         str(TOTAL_MESSAGE_SENT))
     except KeyboardInterrupt:
         print("Interrupted by Keyboard")
 
 
 if __name__ == "__main__":
     # 1, 7, 56, 112
-    run(112)
+    run(112, 1)

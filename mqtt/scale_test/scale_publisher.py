@@ -80,7 +80,7 @@ def run(number_of_client, number_of_broker):
         mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
                                          constant.MQTT_OUTPUT_MSG_SENT,
                                          number_of_client,
-                                         0,
+                                         500,
                                          number_of_broker,
                                          str(TOTAL_MESSAGE_SENT))
     except KeyboardInterrupt:

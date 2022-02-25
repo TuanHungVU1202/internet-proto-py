@@ -119,7 +119,7 @@ if __name__ == "__main__":
     # Init database table
     db_handler.create_table()
     # sub_multi_topic = subscribe to 112 topics instead of specific one from variable topic
-    run(number_of_client=1,
+    run(number_of_client=500,
         number_of_broker=1,
         topic=topic,
         unsubscribe=False,

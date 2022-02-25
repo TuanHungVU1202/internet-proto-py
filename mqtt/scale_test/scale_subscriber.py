@@ -1,5 +1,6 @@
 import json
 import time
+from sqlite3 import OperationalError
 
 import paho.mqtt.client as mqtt
 
@@ -11,6 +12,7 @@ from mqtt.mqtt_helper import get_client_object_id
 client_list = []
 client_info = {}
 client_message_received = {}
+client_delay = {}
 MQTT_TOPIC_BASE = 'InternetProtocol/Scale/Road/'
 
 
@@ -25,19 +27,32 @@ def on_connect(client, userdata, flags, rc):
 
 # Save Data into DB Table
 def on_message(client, userdata, message):
-    # For details of "sensor_Data_Handler" function please refer "sensor_data_to_db.py"
     time_received = util.get_current_timestamp()
     topic = message.topic
     msg = message.payload.decode("utf-8")
-    time_sent = json.loads(msg)['time_sent']
-
     # TODO: write delay to file
+    msg_json = json.loads(msg)
+    time_sent = msg_json['time_sent']
+    msg_id = msg_json['file_index']
     delay = time_received - time_sent
+    delay_list = [delay]
     client_obj_id = get_client_object_id(client)
+
+    if client_obj_id in client_message_received:
+        client_message_received[client_obj_id] += 1
+        client_delay[client_obj_id].extend(delay_list)
+    else:
+        client_message_received[client_obj_id] = 1
+        client_delay[client_obj_id] = delay_list
 
     # print("Sub_id - " + client_obj_id + " - msg: " + msg)
     print("Sub_id: " + client_obj_id + " received message from topic: " + topic)
-    db_handler.persist_data(msg, client_obj_id, time_received)
+
+    # TODO: implement queue here maybe, then pop out and save that to db
+    try:
+        db_handler.persist_data(msg, client_obj_id, time_received)
+    except OperationalError:
+        pass
 
 
 def create_client(client_number):
@@ -52,6 +67,15 @@ def create_client(client_number):
         client_list.append(client)
 
     return client_list
+
+
+def disconnect():
+    for client in client_list:
+        client.unsubscribe(topic)
+        client.disconnect()
+        client.loop_stop()
+        client_obj_id = get_client_object_id(client)
+        print("Sub_id: " + client_obj_id + " disconnect")
 
 
 def run(number_of_client, topic, unsubscribe, sub_multi_topic):
@@ -69,15 +93,22 @@ def run(number_of_client, topic, unsubscribe, sub_multi_topic):
             print('------------------------------------------------------------------------')
             client_list[0].disconnect()
             client_list[0].loop_stop()
+
         while True:
             pass
     except KeyboardInterrupt:
         print("Interrupted by Keyboard")
+        print(client_delay)
+        print(client_message_received)
+        disconnect()
 
 
 if __name__ == "__main__":
-    # 'InternetProtocol/Scale/Road/Kauppalantie'
     topic = 'InternetProtocol/Scale/Road/Kauppalantie'
+    # Init database table
     db_handler.create_table()
     # sub_multi_topic = subscribe to 112 topics instead of specific one from variable topic
-    run(number_of_client=2, topic=topic, unsubscribe=False, sub_multi_topic=True)
+    run(number_of_client=1,
+        topic=topic,
+        unsubscribe=False,
+        sub_multi_topic=True)

@@ -24,7 +24,7 @@ def get_delay_list(file_list):
     return delay_list
 
 
-def get_topic_for_client(unique_road_list, no_of_clients):
+def get_topic_for_publisher(unique_road_list, no_of_clients):
     # 1, 7, 56, 112
     client_topic_dict = {}
     road_list_len = len(unique_road_list)
@@ -46,6 +46,30 @@ def get_topic_for_client(unique_road_list, no_of_clients):
         publisher_id += 1
 
     return client_topic_dict
+
+
+def get_topic_for_subscriber(unique_road_list, no_of_clients):
+    # 112, 112x3, x5, x7
+    topic_client_dict = {}
+    road_list_len = len(unique_road_list)
+    subscriber_batch = int(no_of_clients/road_list_len)
+    start = 0
+    stop = subscriber_batch
+    batch_id = 0
+
+    while start < no_of_clients and batch_id < road_list_len:
+        client_list_per_road = []
+
+        for subscriber_index in range(start, stop):
+            client_list_per_road.append(subscriber_index)
+
+        start += subscriber_batch
+        stop += subscriber_batch
+        topic_client_dict[unique_road_list[batch_id]] = client_list_per_road
+        # increase batch id after iteration
+        batch_id += 1
+
+    return  topic_client_dict
 
 
 # topic = road_name

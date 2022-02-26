@@ -5,12 +5,15 @@ import paho.mqtt.client as mqtt
 
 import constant
 from mqtt import mqtt_helper
-from mqtt.mqtt_helper import get_unique_road_list, get_topic_for_client, get_delay_list, create_data_to_publish
+from mqtt.mqtt_helper import get_unique_road_list, get_delay_list, create_data_to_publish, \
+    get_topic_for_publisher
 from util import get_file_list, get_full_path_file_list
 
 MQTT_DATA_PATH_BASE = '../../resources/samples_p2/'
 message_sent_per_topic = {}
 TOTAL_MESSAGE_SENT = 0
+one_to_many = 'one_to_many'
+one_to_one = 'one_to_one'
 
 
 def create_client(client_number):
@@ -34,7 +37,13 @@ def publish_message(pub_id, client, road_name, delay_list, file_index, file):
 
     data = create_data_to_publish(file, road_name)
     payload = json.dumps(
-        {"time_sent": timestamp, "pub_id": pub_id, "file_index": file_index, "topic": topic, "broker": constant.MQTT_BROKER, "port": constant.MQTT_PORT, "data": data}, indent=4
+        {"time_sent": timestamp,
+         "pub_id": pub_id,
+         "file_index": file_index,
+         "topic": topic,
+         "broker": constant.MQTT_BROKER,
+         "port": constant.MQTT_PORT,
+         "data": data}, indent=4
     ).encode("utf8")
 
     print("Pub_id: " + str(pub_id) + " publishing to: " + topic)
@@ -51,7 +60,7 @@ def publish_message(pub_id, client, road_name, delay_list, file_index, file):
         message_sent_per_topic[topic] = 1
 
 
-def run(number_of_client, number_of_broker):
+def run(number_of_client, number_of_broker, sub_mode):
     try:
         # run once
         list_file_path, list_file_name, list_file_name_non_extension = get_full_path_file_list(MQTT_DATA_PATH_BASE)
@@ -61,7 +70,7 @@ def run(number_of_client, number_of_broker):
         for index, path in enumerate(list_file_path):
             get_unique_road_list(path, unique_road_list)
 
-        client_topic_dict = get_topic_for_client(unique_road_list, number_of_client)
+        client_topic_dict = get_topic_for_publisher(unique_road_list, number_of_client)
         client_list = create_client(number_of_client)
         # while True:
         # road_name is topic
@@ -80,13 +89,20 @@ def run(number_of_client, number_of_broker):
         mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
                                          constant.MQTT_OUTPUT_MSG_SENT,
                                          number_of_client,
-                                         500,
+                                         constant.MQTT_NO_OF_SUBSCRIBERS,
                                          number_of_broker,
                                          str(TOTAL_MESSAGE_SENT))
+        if sub_mode == one_to_one:
+            mqtt_helper.write_result_to_file(constant.MQTT_OUTPUT_PATH,
+                                             constant.MQTT_OUTPUT_MSG_SENT_PER_TOPIC,
+                                             number_of_client,
+                                             constant.MQTT_NO_OF_SUBSCRIBERS,
+                                             number_of_broker,
+                                             str(message_sent_per_topic))
     except KeyboardInterrupt:
         print("Interrupted by Keyboard")
 
 
 if __name__ == "__main__":
     # 1, 7, 56, 112
-    run(112, 1)
+    run(number_of_client=constant.MQTT_NO_OF_PUBLISHERS, number_of_broker=1, sub_mode=one_to_one)

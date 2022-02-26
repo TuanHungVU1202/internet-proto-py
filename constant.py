@@ -29,9 +29,15 @@ MQTT_TOPIC_2 = "InternetProtocol/Road/Discard/"
 MQTT_TOPIC_3 = "InternetProtocol/Road/C3/"
 
 MQTT_TOPIC_SCALE_BASE = "InternetProtocol/Scale/Road/"
-
+# Init few parameters ###########################
+MQTT_NO_OF_PUBLISHERS = 112
+# set the multiplier to 1, 3, 5, 7, 15, 20
+MQTT_NO_OF_SUBSCRIBERS = 112*20
+MQTT_NO_OF_TOPIC = 112
+#################################################
 MQTT_DATA_PATH_BASE = "../resources/samples_p2/"
 MQTT_OUTPUT_PATH = '../../resources/output/mqtt/'
 MQTT_OUTPUT_MSG_SENT = 'message_sent'
+MQTT_OUTPUT_MSG_SENT_PER_TOPIC = 'message_sent_per_topic'
 MQTT_OUTPUT_MSG_RECEIVED = 'message_received'
 MQTT_OUTPUT_DELAY = 'delay'

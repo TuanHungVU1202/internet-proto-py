@@ -129,7 +129,7 @@ def run(number_of_client, number_of_broker, topic, unsubscribe, sub_multi_topic,
         create_client(number_of_client)
 
         if unsubscribe:
-            time.sleep(2)
+            time.sleep(5)
             client_list[0].unsubscribe(topic)
             print('------------------------------------------------------------------------')
             print("UNSUBSCRIBED topic: " + topic + " from Sub - " + str(client_list[0]))
@@ -163,9 +163,18 @@ if __name__ == "__main__":
     db_handler.create_table()
 
     # sub_multi_topic = subscribe to 112 topics instead of specific one from variable topic
+
+    # Un-subscription case - Run publisher first
+    # run(number_of_client=constant.MQTT_NO_OF_SUBSCRIBERS,
+    #     number_of_broker=1,
+    #     topic=sample_topic,
+    #     unsubscribe=True,
+    #     sub_multi_topic=True,
+    #     sub_mode=one_to_many)
+
     run(number_of_client=constant.MQTT_NO_OF_SUBSCRIBERS,
         number_of_broker=1,
         topic=sample_topic,
         unsubscribe=False,
-        sub_multi_topic=False,
+        sub_multi_topic=True,
         sub_mode=one_to_one)

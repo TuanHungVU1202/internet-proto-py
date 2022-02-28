@@ -51,7 +51,7 @@ ax.scatter(x2,sub_100, label='100 Subscribers')
 ax.plot(x2,y_mean100, label='Mean of 100 subs', linestyle='-.')
 ax.scatter(x3,sub_500, label='500 Subscribers')
 ax.plot(x3,y_mean500, label='Mean of 500 subs', linestyle='-')
-
+ax.xaxis.set_ticklabels([])
 axes.boxplot(data,widths = 0.6, patch_artist = True, labels=labels)
 axes.set(title='Percentage Loss vs Subscribers')
 axes.set_ylabel('Losses (%)')

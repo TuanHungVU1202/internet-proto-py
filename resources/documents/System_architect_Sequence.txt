@@ -1,0 +1,44 @@
+title Request - Response stream
+
+participant Source
+participant Server_Media
+participant Storage
+participant User
+
+participant Client
+
+participant CDN
+participant Load_Balancer
+participant Server_Request
+
+Source->Server_Media:Send original videos
+Server_Media->Storage:Transcode videos
+User->Client:Request
+
+alt !adaptiveBitrateEnable
+    Client->CDN:request BEST segment
+    CDN->Load_Balancer:request BEST segment
+    Load_Balancer->Server_Request:request BEST segment
+
+    Server_Request->Storage:get bestSegment
+    Storage->Server_Request:video = bestSegment
+        
+	Server_Request->Load_Balancer:video
+    Load_Balancer->CDN:video
+    CDN->Client:video
+    
+else adaptiveBitrateEnable
+	loop
+    	Client->Client:Measure bandwidth
+    end
+        Client->CDN:request suitable segment
+        CDN->Load_Balancer:request suitable segment
+        Load_Balancer->Server_Request:request suitable segment
+        
+        Server_Request->Storage:get selectedSegment
+        Storage->Server_Request:video = selectedSegment
+        
+        Server_Request->Load_Balancer:video
+        Load_Balancer->CDN:video
+        CDN->Client:video
+end 

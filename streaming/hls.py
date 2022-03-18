@@ -17,7 +17,7 @@ import sys
 import logging
 
 import ffmpeg_streaming
-from ffmpeg_streaming import Formats
+from ffmpeg_streaming import Formats, Representation, Bitrate, Size
 
 logging.basicConfig(filename='streaming.log', level=logging.NOTSET, format='[%(asctime)s] %(levelname)s: %(message)s')
 
@@ -90,7 +90,14 @@ def main():
 
     video = ffmpeg_streaming.input(args.input)
 
+    # Choosing quality to convert
+    # _360p = Representation(Size(640, 360), Bitrate(276 * 1024, 128 * 1024))
+    # _480p = Representation(Size(854, 480), Bitrate(750 * 1024, 192 * 1024))
+    # _720p = Representation(Size(1280, 720), Bitrate(2048 * 1024, 320 * 1024))
+
     hls = video.hls(Formats.h264())
+    # Could use this instead to encode to selective quality
+    # hls.representations(_360p, _480p, _720p)
     hls.auto_generate_representations()
 
     if args.fragmented:
